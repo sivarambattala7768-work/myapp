@@ -2,11 +2,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:myapp/screens/login/register_screen.dart';
 import 'package:myapp/screens/posts/providers/posts_provider.dart';
 import 'package:myapp/services/auth_service.dart';
 
-// Provider for the AuthService, allowing UI to access logout functionality.
-final authServiceProvider = Provider<AuthService>((ref) => AuthService());
+// NOTE: The duplicate authServiceProvider has been removed from this file.
+// It is correctly provided from a central location.
 
 class PostListScreen extends ConsumerWidget {
   const PostListScreen({super.key});
@@ -14,6 +15,7 @@ class PostListScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final postsAsyncValue = ref.watch(postsProvider);
+    final authService = ref.watch(authServiceProvider); // Get the service from the provider.
 
     return Scaffold(
       appBar: AppBar(
@@ -26,12 +28,17 @@ class PostListScreen extends ConsumerWidget {
               context.go('/create');
             },
           ),
-          // --- LOGOUT BUTTON ADDED HERE ---
+          IconButton(
+            icon: const Icon(Icons.chat),
+            tooltip: 'New Chat',
+            onPressed: () {
+              context.go('/chat');
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.logout),
             tooltip: 'Logout',
             onPressed: () async {
-              // Show confirmation dialog before logging out.
               final confirmed = await showDialog<bool>(
                 context: context,
                 builder: (context) => AlertDialog(
@@ -52,16 +59,12 @@ class PostListScreen extends ConsumerWidget {
                 ),
               );
 
-              // If the user confirmed, proceed with logout.
               if (confirmed == true) {
                 if (!context.mounted) return;
                 try {
-                  // Access the AuthService and call the signOut method.
-                  await ref.read(authServiceProvider).signOut();
-                  // Navigate to the login screen after successful logout.
+                  await authService.signOut();
                   context.go('/login');
                 } catch (e) {
-                  // Show an error message if logout fails.
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text('Logout failed: $e'),
